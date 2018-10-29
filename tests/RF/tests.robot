@@ -7,7 +7,7 @@ Library           SeleniumLibrary
 *** Variables ***
 ${github_username}   jfx
 ${github_name}   FX Soubirou
-${grid_url}   http://node:4444/wd/hub
+${grid_url}   http://selenium:4444/wd/hub
 
 *** Test Cases ***
 Test Robot Framework: [--version] option

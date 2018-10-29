@@ -1,9 +1,38 @@
 
 DOCKER = docker
 
-## Docker
-## -----
+IMAGE_NODE     = node:8-jessie
+IMAGE_SELENIUM = selenium/standalone-chrome:3
 
+## nodejs modules management
+## -------------------------
+yarn-install: ## Install nodejs modules with yarn
+yarn-install: clean-node-modules
+	$(eval uid := $(shell id -u))
+	$(eval gid := $(shell id -g))
+	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache install
+
+yarn-outdated: ## Check outdated npm packages
+yarn-outdated:
+	$(eval uid := $(shell id -u))
+	$(eval gid := $(shell id -g))
+	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache outdated || true
+
+yarn-upgrade: ## Upgrade packages
+yarn-upgrade:
+	$(eval uid := $(shell id -u))
+	$(eval gid := $(shell id -g))
+	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache upgrade
+
+clean-node-modules: ## Remove node_modules directory
+clean-node-modules:
+	rm -rf .node_cache
+	rm -rf node_modules
+
+.PHONY: yarn-install yarn-outdated yarn-upgrade clean-node-modules
+
+## Docker
+## ------
 docker-build: ## Build docker image
 docker-build: docker-rmi
 	$(DOCKER) build -t docker-robot-framework:latest .
@@ -17,15 +46,23 @@ docker-rmi: ## Remove all untagged images
 docker-rmi: docker-rm
 	$(DOCKER) image prune -f
 
+docker-pull-images: ## Pull last docker images
+docker-pull-images:
+	$(DOCKER) pull ${IMAGE_NODE}
+	$(DOCKER) pull ${IMAGE_SELENIUM}
+	$(DOCKER) image prune -f
+
+PHONY: docker-build docker-rm docker-rmi docker-pull-images
+
 ## QA
-## ------
+## --
 tests-local: ## Run Robot Framework tests
 tests-local:
 	 $(DOCKER) network create tests-network
-	 $(DOCKER) run --rm -d -p 4444:4444 -v /dev/shm:/dev/shm --network=tests-network --name node selenium/standalone-chrome:3
+	 $(DOCKER) run --rm -d -p 4444:4444 -v /dev/shm:/dev/shm --network=tests-network --name selenium ${IMAGE_SELENIUM}
 	 sleep 10
-	 -$(DOCKER) run --rm -v ${PWD}/tests:/tests:ro -v ${PWD}/reports:/reports --network=tests-network docker-robot-framework robot --outputdir /reports RF
-	 $(DOCKER) kill node
+	 -$(DOCKER) run -t --rm -v ${PWD}/tests:/tests:ro -v ${PWD}/reports:/reports --network=tests-network docker-robot-framework robot --outputdir /reports RF
+	 $(DOCKER) kill selenium
 	 $(DOCKER) network rm tests-network
 
 clean-tests-local: ## Clean local test environment
@@ -34,6 +71,16 @@ clean-tests-local:
 	 -$(DOCKER) network rm tests-network
 
 .PHONY: tests-local clean-tests-local
+
+## Admin
+## -----
+commit: ## Commit with Commitizen command line
+commit:
+	$(eval uid := $(shell id -u))
+	$(eval gid := $(shell id -g))
+	$(DOCKER) run -it --rm -v ${PWD}:/node -v ${PWD}/.node_cache:/.cache -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache commit
+
+.PHONY: commit
 
 .DEFAULT_GOAL := help
 help:
