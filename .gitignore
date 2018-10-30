@@ -3,3 +3,4 @@
 /reports/
 *.log
 /.node_cache/
+/.gnupg/

@@ -4,25 +4,24 @@ DOCKER = docker
 IMAGE_NODE     = node:8-jessie
 IMAGE_SELENIUM = selenium/standalone-chrome:3
 
+PRIVATE_KEY = github-sign.key
+
+UID := $(shell id -u)
+GID := $(shell id -g)
+
 ## nodejs modules management
 ## -------------------------
 yarn-install: ## Install nodejs modules with yarn
 yarn-install: clean-node-modules
-	$(eval uid := $(shell id -u))
-	$(eval gid := $(shell id -g))
-	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache install
+	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache install
 
 yarn-outdated: ## Check outdated npm packages
 yarn-outdated:
-	$(eval uid := $(shell id -u))
-	$(eval gid := $(shell id -g))
-	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache outdated || true
+	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache outdated || true
 
 yarn-upgrade: ## Upgrade packages
 yarn-upgrade:
-	$(eval uid := $(shell id -u))
-	$(eval gid := $(shell id -g))
-	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache upgrade
+	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache upgrade
 
 clean-node-modules: ## Remove node_modules directory
 clean-node-modules:
@@ -74,11 +73,14 @@ clean-tests-local:
 
 ## Admin
 ## -----
+import-commit-key: ## Import key for sign commit
+import-commit-key:
+	mkdir -p .gnupg
+	$(DOCKER) run -it --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} gpg --homedir /node/.gnupg --import /node/${PRIVATE_KEY}
+
 commit: ## Commit with Commitizen command line
 commit:
-	$(eval uid := $(shell id -u))
-	$(eval gid := $(shell id -g))
-	$(DOCKER) run -it --rm -v ${PWD}:/node -v ${PWD}/.node_cache:/.cache -w /node -u ${uid}:${gid} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache commit
+	$(DOCKER) run -it --rm -v ${PWD}:/node -v ${PWD}/.node_cache:/.cache -w /node -u ${UID}:${GID} -e "GNUPGHOME=/node/.gnupg" ${IMAGE_NODE} yarn --cache-folder /node/.node_cache commit
 
 .PHONY: commit
 
