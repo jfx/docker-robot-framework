@@ -5,9 +5,9 @@ Library           RequestsLibrary
 Library           SeleniumLibrary
 
 *** Variables ***
-${github_username}   jfx
-${github_name}   FX Soubirou
-${grid_url}   http://selenium:4444/wd/hub
+${GITHUB_USERNAME}   jfx
+${GITHUB_NAME}   FX Soubirou
+${GRID_URL}   http://selenium:4444/wd/hub
 
 *** Test Cases ***
 Test Robot Framework: [--version] option
@@ -17,16 +17,15 @@ Test Robot Framework: [--version] option
 
 Test Requests library
     Given Create Session  github  https://api.github.com   disable_warnings=1
-    ${resp}=  When Get Request  github  /users/${github_username}
+    ${resp}=  When Get Request  github  /users/${GITHUB_USERNAME}
     Then Should Be Equal As Strings  ${resp.status_code}  200
-    And Dictionary Should Contain Value  ${resp.json()}  ${github_name}
+    And Dictionary Should Contain Value  ${resp.json()}  ${GITHUB_NAME}
 
 Test Selenium library
-    Open Browser	 https://www.google.fr   Chrome 	remote_url=${grid_url}
+    Open Browser	 https://www.qwant.com   Chrome 	remote_url=${GRID_URL}
     Input text   name=q   robot framework
-    Press Key	 name=q	 \\27
-    Click Element   name=btnI
-    Location Should Be   http://robotframework.org/
+    Click Element   class:search_bar__form__search
+    Wait Until Page Contains   robotframework.org
     [Teardown]  Close All Browsers
 
 *** Keywords ***

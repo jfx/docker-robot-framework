@@ -13,15 +13,15 @@ GID := $(shell id -g)
 ## -------------------------
 yarn-install: ## Install nodejs modules with yarn
 yarn-install: clean-node-modules
-	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache install
+	$(DOCKER) run --rm -v ${PWD}:/home/node -w /home/node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /home/node/.node_cache install
 
 yarn-outdated: ## Check outdated npm packages
 yarn-outdated:
-	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache outdated || true
+	$(DOCKER) run --rm -v ${PWD}:/home/node -w /home/node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /home/node/.node_cache outdated || true
 
 yarn-upgrade: ## Upgrade packages
 yarn-upgrade:
-	$(DOCKER) run -t --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /node/.node_cache upgrade
+	$(DOCKER) run --rm -v ${PWD}:/home/node -w /home/node -u ${UID}:${GID} ${IMAGE_NODE} yarn --cache-folder /home/node/.node_cache upgrade
 
 clean-node-modules: ## Remove node_modules directory
 clean-node-modules:
@@ -69,20 +69,25 @@ clean-tests-local:
 	 -$(DOCKER) kill node
 	 -$(DOCKER) network rm tests-network
 
-.PHONY: tests-local clean-tests-local
+tests-remote: ## Run Robot Framework tests with a remote grid. Arguments: image=docker-robot-framework, url=grid_url
+tests-remote:
+	test -n "${image}"  # Failed if image parameter is not set
+	test -n "${url}"  # Failed if url parameter is not set
+	$(DOCKER) run -t --rm -v ${PWD}/tests:/tests:ro -v ${PWD}/reports:/reports ${image} robot -v GRID_URL:${url} --outputdir /reports RF
+
+.PHONY: tests-local clean-tests-local tests-remote
 
 ## Admin
 ## -----
 import-commit-key: ## Import key for sign commit
 import-commit-key:
 	mkdir -p .gnupg
-	$(DOCKER) run -it --rm -v ${PWD}:/node -w /node -u ${UID}:${GID} ${IMAGE_NODE} gpg --homedir /node/.gnupg --import /node/${PRIVATE_KEY}
+	$(DOCKER) run -it --rm -v ${PWD}:/home/node -w /home/node -u ${UID}:${GID} ${IMAGE_NODE} gpg --homedir /home/node/.gnupg --import /home/node/${PRIVATE_KEY}
 
 commit: ## Commit with Commitizen command line
 commit:
-	$(DOCKER) run -it --rm -v ${PWD}:/node -v ${PWD}/.node_cache:/.cache -w /node -u ${UID}:${GID} -e "GNUPGHOME=/node/.gnupg" ${IMAGE_NODE} yarn --cache-folder /node/.node_cache commit
-
-.PHONY: commit
+	$(DOCKER) run -it --rm -v ${PWD}:/home/node -v ${PWD}/.node_cache:/.cache -w /home/node -u ${UID}:${GID} -e "GNUPGHOME=/home/node/.gnupg" ${IMAGE_NODE} yarn --cache-folder /home/node/.node_cache commit
+.PHONY: import-commit-key commit
 
 .DEFAULT_GOAL := help
 help:
