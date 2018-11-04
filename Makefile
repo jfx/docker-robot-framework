@@ -73,7 +73,7 @@ tests-remote: ## Run Robot Framework tests with a remote grid. Arguments: image=
 tests-remote:
 	test -n "${image}"  # Failed if image parameter is not set
 	test -n "${url}"  # Failed if url parameter is not set
-	$(DOCKER) run -t --rm -v ${PWD}/tests:/tests:ro -v ${PWD}/reports:/reports ${image} robot -v GRID_URL:${url} --outputdir /reports RF
+	$(DOCKER) run -t --rm -v ${PWD}/tests:/tests:ro -v ${PWD}/reports:/reports -u ${UID}:${GID} ${image} robot -v GRID_URL:${url} --outputdir /reports RF
 
 .PHONY: tests-local clean-tests-local tests-remote
 

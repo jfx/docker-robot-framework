@@ -17,8 +17,8 @@ jobs:
         - make docker-build
         - docker images
         - TAG_ID=`echo ${BUILD_ID} | tr -dc a-zA-Z0-9-._`
-        - docker tag docker-robot-framework:latest jfxs/docker-robot-framework:${TAG_ID}
-        - docker push jfxs/docker-robot-framework:${TAG_ID}
+        - docker tag docker-robot-framework:latest jfxs/robot-framework:${TAG_ID}
+        - docker push jfxs/robot-framework:${TAG_ID}
 
     - stage: "Robot Framework tests"
       services:
@@ -31,11 +31,11 @@ jobs:
         - sudo apt-get update && sudo apt-get -y install docker-ce
       script:
         - TAG_ID=`echo ${BUILD_ID} | tr -dc a-zA-Z0-9-._`
-        - make tests-remote image=jfxs/docker-robot-framework:${TAG_ID} url=${GRID_URL}
+        - make tests-remote image=jfxs/robot-framework:${TAG_ID} url=${GRID_URL}
 
     - stage: "Release"
       language: node_js
-      node_js: 10
+      node_js: 8
       env:
         - BUILD_ID=${TRAVIS_BRANCH}-${TRAVIS_COMMIT:0:7}-${TRAVIS_BUILD_NUMBER}
       before_install:
@@ -47,6 +47,6 @@ jobs:
         - TAG_ID=`echo ${BUILD_ID} | tr -dc a-zA-Z0-9-._`
 #        - echo "export TAG_ID=${TAG_ID}" > env-tag.sh
 #        - source env-tag.sh
-        - docker pull jfxs/docker-robot-framework:${TAG_ID}
+        - docker pull jfxs/robot-framework:${TAG_ID}
         - npx semantic-release
       if: branch = master AND type = push AND fork = false
